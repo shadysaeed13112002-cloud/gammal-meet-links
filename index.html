@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gammal Meet Links</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <h1>لينكات السيشنز</h1>
+      <div id="account" class="account" hidden>
+        <span id="accountEmail"></span>
+        <button id="signOutBtn" class="link-btn" type="button">خروج</button>
+      </div>
+    </header>
+
+    <div id="configWarning" class="card warn" hidden>
+      لسه محطتش الـ Client ID في ملف <code>config.js</code>. اتبع الخطوات اللي في <code>README.md</code>.
+    </div>
+
+    <section id="signInCard" class="card" hidden>
+      <p>سجّل دخول بحساب جوجل اللي عايز السيشنز تتعمل على الكالندر بتاعه.</p>
+      <button id="signInBtn" class="primary" type="button">Sign in with Google</button>
+    </section>
+
+    <section id="formCard" class="card" hidden>
+      <form id="sessionForm" novalidate>
+        <label class="field">
+          <span>اسم السيشن</span>
+          <input id="name" type="text" dir="auto" required placeholder="مثلاً: Ahmed - C++ Session">
+        </label>
+
+        <div class="type-switch" role="radiogroup">
+          <label><input type="radio" name="type" value="once" checked> مرة واحدة</label>
+          <label><input type="radio" name="type" value="weekly"> أسبوعية</label>
+        </div>
+
+        <div id="onceFields">
+          <label class="field">
+            <span>التاريخ</span>
+            <input id="date" type="date" required>
+          </label>
+          <div class="field">
+            <span>الوقت</span>
+            <div class="time" id="onceTime"></div>
+          </div>
+        </div>
+
+        <div id="weeklyFields" hidden>
+          <label class="field">
+            <span>تبدأ من تاريخ</span>
+            <input id="startDate" type="date">
+          </label>
+          <div class="field">
+            <span>الأيام والمواعيد</span>
+            <div id="days" class="days"></div>
+          </div>
+          <label class="field">
+            <span>عدد الأسابيع</span>
+            <input id="weeks" type="number" min="1" max="52">
+          </label>
+        </div>
+
+        <p id="formError" class="error" hidden></p>
+        <button id="createBtn" class="primary" type="submit">اعمل السيشن</button>
+      </form>
+    </section>
+
+    <section id="resultCard" class="card result" hidden>
+      <h2>الرسالة جاهزة</h2>
+      <pre id="message" dir="auto"></pre>
+      <div class="actions">
+        <button id="copyBtn" class="primary" type="button">نسخ</button>
+        <a id="calendarLink" target="_blank" rel="noopener">افتح في الكالندر</a>
+      </div>
+      <p id="resultNote" class="muted"></p>
+    </section>
+
+    <section id="historyCard" class="card" hidden>
+      <h2>آخر السيشنز</h2>
+      <ul id="history" class="history"></ul>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
