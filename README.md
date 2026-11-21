@@ -6,9 +6,15 @@
 - سيشن **أسبوعية**: بتختار الأيام وكل يوم بوقته وعدد الأسابيع. الطالب بياخد لينك واحد ثابت حتى لو الأوقات مختلفة من يوم ليوم.
 - التوقيت على القاهرة (`Africa/Cairo`). لو عايز تغيّر سيشن واحدة بس، عدّلها من Google Calendar على طول.
 
+**افتحها من هنا (موبايل أو كمبيوتر):** https://shadysaeed13112002-cloud.github.io/gammal-meet-links/
+
 ---
 
-## للانستراكتور: إزاي تشغّلها
+## للانستراكتور: إزاي تستخدمها
+
+الأسهل: افتح اللينك اللي فوق وسجّل دخول بحسابك (لازم شادي يكون ضافك كـ Test user الأول). على الموبايل تقدر تعملها **Add to Home Screen** وتبقى زي التطبيق.
+
+### أو تشغّلها لوكال على جهازك
 
 1. ابعت إيميل الـ Gmail بتاعك لشادي عشان يضيفك (مرة واحدة بس).
 2. نزّل الفولدر ده وفكّه (لو zip).
@@ -37,7 +43,7 @@
    - **Audience / Test users**: ضيف إيميل Gmail بتاع كل انستراكتور (لحد 100). خلي الـ Publishing status على **Testing**.
 4. **APIs & Services ← Credentials ← Create credentials ← OAuth client ID**:
    - Application type: **Web application**.
-   - **Authorized JavaScript origins**: `http://localhost:8080`
+   - **Authorized JavaScript origins**: `https://shadysaeed13112002-cloud.github.io` و `http://localhost:8080`
    - مش محتاج Redirect URIs.
 5. انسخ الـ **Client ID** وحطه في `config.js` مكان `PASTE_YOUR_CLIENT_ID_HERE...`.
 
