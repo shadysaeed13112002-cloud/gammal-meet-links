@@ -55,3 +55,19 @@ pre {
 .history li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); }
 .history li:first-child { border-top: 0; }
 .history .h-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wa-send { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 16px; }
+.wa {
+  background: #25d366; color: #0b2e17; border: 0; border-radius: 8px;
+  padding: 12px 20px; font-weight: 700; width: 100%;
+}
+.contact-form { display: grid; gap: 8px; margin-top: 12px; }
+.contact-form input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+.contact-actions { display: flex; gap: 16px; align-items: center; }
+.history .h-actions { display: flex; gap: 12px; flex-shrink: 0; }
+.history .h-phone { color: var(--muted); font-size: .85rem; direction: ltr; unicode-bidi: isolate; }
+@media (max-width: 480px) {
+  .actions { flex-wrap: wrap; }
+  .actions .primary { flex: 1; }
+}
+.c-info { display: flex; flex-direction: column; min-width: 0; }
+.c-info > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

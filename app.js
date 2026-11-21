@@ -76,8 +76,22 @@
 
   function buildMessage(name, link) { return `${name}\n${link}`; }
 
+  // Returns digits in international format (Egypt +20 by default), or "" if invalid.
+  function normalizePhone(raw) {
+    let s = String(raw || "").trim().replace(/[\s\-().]/g, "");
+    if (s.startsWith("+")) s = s.slice(1);
+    else if (s.startsWith("00")) s = s.slice(2);
+    else if (s.startsWith("0")) s = "20" + s.slice(1);
+    else if (/^1\d{9}$/.test(s)) s = "20" + s;
+    return /^\d{8,15}$/.test(s) ? s : "";
+  }
+
+  function waLink(phone, text) {
+    return `https://wa.me/${phone || ""}?text=${encodeURIComponent(text)}`;
+  }
+
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { to24h, localDateTime, weekdayOf, addDays, buildWeeklySeries, buildMessage, DAYS };
+    module.exports = { to24h, localDateTime, weekdayOf, addDays, buildWeeklySeries, buildMessage, normalizePhone, waLink, DAYS };
     return;
   }
 
@@ -239,6 +253,7 @@
     const signedIn = !!(auth && auth.email !== undefined && auth.token);
     $("signInCard").hidden = !configured || signedIn || !tokenClient;
     $("formCard").hidden = !configured || !signedIn;
+    $("contactsCard").hidden = !configured;
     $("account").hidden = !signedIn;
     $("accountEmail").textContent = signedIn ? auth.email : "";
     renderHistory();
@@ -281,9 +296,107 @@
       const btn = document.createElement("button");
       btn.className = "link-btn"; btn.type = "button"; btn.textContent = "نسخ";
       btn.addEventListener("click", () => copyText(buildMessage(item.name, item.link), btn));
-      li.append(span, btn);
+      const wa = document.createElement("button");
+      wa.className = "link-btn"; wa.type = "button"; wa.textContent = "واتساب";
+      wa.addEventListener("click", () => sendWhatsApp(buildMessage(item.name, item.link)));
+      const acts = document.createElement("span");
+      acts.className = "h-actions";
+      acts.append(btn, wa);
+      li.append(span, acts);
       ul.appendChild(li);
     }
+  }
+
+  // ---------- WhatsApp contacts (stored only on this device) ----------
+
+  let editingId = null;
+
+  function getContacts() { return loadJSON(localStorage, "waContacts") || []; }
+  function setContacts(list) { saveJSON(localStorage, "waContacts", list); renderContacts(); }
+
+  function renderContacts() {
+    const list = getContacts();
+    const ul = $("contacts");
+    ul.innerHTML = "";
+    for (const c of list) {
+      const li = document.createElement("li");
+      const info = document.createElement("span");
+      info.className = "c-info";
+      const nm = document.createElement("span"); nm.dir = "auto"; nm.textContent = c.name;
+      const ph = document.createElement("span"); ph.className = "h-phone"; ph.textContent = "+" + c.phone;
+      info.append(nm, ph);
+      const acts = document.createElement("span");
+      acts.className = "h-actions";
+      const ed = document.createElement("button");
+      ed.className = "link-btn"; ed.type = "button"; ed.textContent = "تعديل";
+      ed.addEventListener("click", () => startEdit(c));
+      const del = document.createElement("button");
+      del.className = "link-btn"; del.type = "button"; del.textContent = "مسح";
+      del.addEventListener("click", () => {
+        if (confirm(`تمسح ${c.name}؟`)) setContacts(getContacts().filter((x) => x.id !== c.id));
+      });
+      acts.append(ed, del);
+      li.append(info, acts);
+      ul.appendChild(li);
+    }
+    // contact picker on the result card
+    const sel = $("waContact");
+    const last = loadJSON(localStorage, "waLast");
+    sel.innerHTML = "";
+    for (const c of list) {
+      const o = document.createElement("option");
+      o.value = c.id; o.textContent = c.name;
+      sel.appendChild(o);
+    }
+    const any = document.createElement("option");
+    any.value = ""; any.textContent = "أختار من واتساب نفسه";
+    sel.appendChild(any);
+    if (last !== null && [...sel.options].some((o) => o.value === last)) sel.value = last;
+  }
+
+  function startEdit(c) {
+    editingId = c.id;
+    $("contactName").value = c.name;
+    $("contactPhone").value = "+" + c.phone;
+    $("contactSave").textContent = "احفظ التعديل";
+    $("contactCancel").hidden = false;
+    $("contactName").focus();
+  }
+
+  function resetContactForm() {
+    editingId = null;
+    $("contactForm").reset();
+    $("contactSave").textContent = "ضيف الرقم";
+    $("contactCancel").hidden = true;
+    $("contactError").hidden = true;
+  }
+
+  function onContactSubmit(e) {
+    e.preventDefault();
+    const name = $("contactName").value.trim();
+    const phone = normalizePhone($("contactPhone").value);
+    const err = !name ? "اكتب الاسم." : !phone ? "الرقم مش مظبوط. اكتبه زي 01012345678 أو +201012345678" : "";
+    $("contactError").textContent = err;
+    $("contactError").hidden = !err;
+    if (err) return;
+    const list = getContacts();
+    if (editingId) {
+      const c = list.find((x) => x.id === editingId);
+      if (c) { c.name = name; c.phone = phone; }
+    } else {
+      const id = String(Date.now());
+      list.push({ id, name, phone });
+      saveJSON(localStorage, "waLast", id);
+    }
+    resetContactForm();
+    setContacts(list);
+  }
+
+  function sendWhatsApp(text) {
+    const id = $("waContact").value;
+    saveJSON(localStorage, "waLast", id);
+    const c = getContacts().find((x) => x.id === id);
+    window.open(waLink(c ? c.phone : "", text), "_blank", "noopener");
   }
 
   function collectForm() {
@@ -364,6 +477,10 @@
     $("signOutBtn").addEventListener("click", signOut);
     $("sessionForm").addEventListener("submit", onSubmit);
     $("copyBtn").addEventListener("click", (e) => copyText($("message").textContent, e.target));
+    $("waSendBtn").addEventListener("click", () => sendWhatsApp($("message").textContent));
+    $("contactForm").addEventListener("submit", onContactSubmit);
+    $("contactCancel").addEventListener("click", resetContactForm);
+    renderContacts();
     render();
     if (location.protocol === "file:") {
       $("configWarning").hidden = false;

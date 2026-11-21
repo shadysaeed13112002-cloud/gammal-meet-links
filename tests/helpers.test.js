@@ -40,3 +40,19 @@ test("weekly: different times make separate series", () => {
 test("message is name then link", () => {
   assert.strictEqual(h.buildMessage("Ahmed", "https://meet.google.com/x"), "Ahmed\nhttps://meet.google.com/x");
 });
+
+test("phone normalization defaults to Egypt", () => {
+  assert.strictEqual(h.normalizePhone("01012345678"), "201012345678");
+  assert.strictEqual(h.normalizePhone("010 1234 5678"), "201012345678");
+  assert.strictEqual(h.normalizePhone("+20 101-234-5678"), "201012345678");
+  assert.strictEqual(h.normalizePhone("00201012345678"), "201012345678");
+  assert.strictEqual(h.normalizePhone("1012345678"), "201012345678");
+  assert.strictEqual(h.normalizePhone("+966501234567"), "966501234567");
+  assert.strictEqual(h.normalizePhone("abc"), "");
+});
+
+test("wa.me link encodes the message", () => {
+  assert.strictEqual(h.waLink("201012345678", "Ahmed\nhttps://meet.google.com/x"),
+    "https://wa.me/201012345678?text=Ahmed%0Ahttps%3A%2F%2Fmeet.google.com%2Fx");
+  assert.strictEqual(h.waLink("", "hi"), "https://wa.me/?text=hi");
+});

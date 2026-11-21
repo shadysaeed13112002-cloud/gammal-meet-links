@@ -81,6 +81,28 @@
         <a id="calendarLink" target="_blank" rel="noopener">افتح في الكالندر</a>
       </div>
       <p id="resultNote" class="muted"></p>
+      <div class="wa-send">
+        <label class="field">
+          <span>ابعتها على واتساب لـ</span>
+          <select id="waContact"></select>
+        </label>
+        <button id="waSendBtn" class="wa" type="button">ابعت على واتساب</button>
+      </div>
+    </section>
+
+    <section id="contactsCard" class="card" hidden>
+      <h2>أرقام الواتساب</h2>
+      <p class="muted">الأرقام دي بتتحفظ على الجهاز ده بس، ومش بتترفع في أي مكان.</p>
+      <ul id="contacts" class="history"></ul>
+      <form id="contactForm" class="contact-form" novalidate>
+        <input id="contactName" type="text" dir="auto" placeholder="الاسم (مثلاً: Customer Service)">
+        <input id="contactPhone" type="tel" dir="ltr" inputmode="tel" placeholder="01xxxxxxxxx أو +20...">
+        <div class="contact-actions">
+          <button id="contactSave" class="primary" type="submit">ضيف الرقم</button>
+          <button id="contactCancel" class="link-btn" type="button" hidden>إلغاء</button>
+        </div>
+        <p id="contactError" class="error" hidden></p>
+      </form>
     </section>
 
     <section id="historyCard" class="card" hidden>
