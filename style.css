@@ -8,6 +8,7 @@
   --radius: 18px;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { background: var(--bg); }
 body {
   margin: 0; min-height: 100vh; color: var(--text); font-size: 16px; line-height: 1.6;
@@ -24,7 +25,7 @@ a { color: var(--accent); }
 .nav { border-bottom: 1px solid var(--border); background: rgba(6, 20, 42, .7); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 5; }
 .nav-in { max-width: 640px; margin: 0 auto; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 800; font-size: 1.15rem; }
-.brand-logo { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, #00e5ff, #0fa3a3); display: inline-block; object-fit: contain; }
+.brand-logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #00e5ff, #0fa3a3); display: inline-block; object-fit: contain; }
 img.brand-logo { background: none; }
 .account { color: var(--muted); font-size: .85rem; display: flex; gap: 10px; align-items: center; min-width: 0; }
 .account span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 52vw; }
