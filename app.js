@@ -74,7 +74,48 @@
     return series;
   }
 
-  function buildMessage(name, link) { return `${name}\n${link}`; }
+  const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+
+  function dayName(dateStr) { return DAYS.find((d) => d.js === weekdayOf(dateStr)).ar; }
+
+  // "2026-11-22" -> "الأحد 22 نوفمبر 2026"
+  function fmtDate(dateStr) {
+    const [y, mo, d] = dateStr.split("-").map(Number);
+    return `${dayName(dateStr)} ${d} ${MONTHS_AR[mo - 1]} ${y}`;
+  }
+
+  // 19, 0 -> "7:00 م" (Arabic AM/PM marks avoid bidi reordering in WhatsApp)
+  function fmtTime(h, m) {
+    const total = ((h * 60 + m) % 1440 + 1440) % 1440;
+    const hh = Math.floor(total / 60), mm = total % 60;
+    return `${hh % 12 || 12}:${pad(mm)} ${hh < 12 ? "ص" : "م"}`;
+  }
+
+  function fmtRange(h, m) {
+    return `من ${fmtTime(h, m)} لـ ${fmtTime(h, m + CFG.DURATION_MINUTES)}`;
+  }
+
+  // info: {type:"once", date, h, m} or {type:"weekly", startDate, weeks, slots:[{js, ar, h, m}]}
+  function sessionDetails(info) {
+    if (info.type === "once") {
+      return [`📅 ${fmtDate(info.date)}`, `⏰ ${fmtRange(info.h, info.m)} (بتوقيت القاهرة)`];
+    }
+    const start = weekdayOf(info.startDate);
+    const ordered = info.slots.slice().sort((a, b) => ((a.js - start + 7) % 7) - ((b.js - start + 7) % 7));
+    const firstOf = (s) => addDays(info.startDate, (s.js - start + 7) % 7);
+    const firstDate = firstOf(ordered[0]);
+    const lastDate = ordered.map((s) => addDays(firstOf(s), 7 * (info.weeks - 1))).sort().pop();
+    const lines = [`🔁 كل أسبوع لمدة ${info.weeks} ${info.weeks === 1 ? "أسبوع" : info.weeks <= 10 ? "أسابيع" : "أسبوع"}`];
+    for (const s of ordered) lines.push(`📅 ${s.ar} ${fmtRange(s.h, s.m)}`);
+    lines.push(`🗓️ من ${fmtDate(firstDate)} لحد ${fmtDate(lastDate)}`);
+    lines.push("⏰ المواعيد بتوقيت القاهرة");
+    return lines;
+  }
+
+  function buildMessage(name, link, details) {
+    return [`*${name}*`, ...(details || []), `🔗 ${link}`].join("\n");
+  }
 
   // Returns digits in international format (Egypt +20 by default), or "" if invalid.
   function normalizePhone(raw) {
@@ -91,7 +132,7 @@
   }
 
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { to24h, localDateTime, weekdayOf, addDays, buildWeeklySeries, buildMessage, normalizePhone, waLink, DAYS };
+    module.exports = { to24h, localDateTime, weekdayOf, addDays, buildWeeklySeries, buildMessage, sessionDetails, fmtDate, fmtTime, normalizePhone, waLink, DAYS };
     return;
   }
 
@@ -295,10 +336,10 @@
       span.textContent = `${item.name} · ${item.when}`;
       const btn = document.createElement("button");
       btn.className = "link-btn"; btn.type = "button"; btn.textContent = "نسخ";
-      btn.addEventListener("click", () => copyText(buildMessage(item.name, item.link), btn));
+      btn.addEventListener("click", () => copyText(item.message || buildMessage(item.name, item.link), btn));
       const wa = document.createElement("button");
       wa.className = "link-btn"; wa.type = "button"; wa.textContent = "واتساب";
-      wa.addEventListener("click", () => sendWhatsApp(buildMessage(item.name, item.link)));
+      wa.addEventListener("click", () => sendWhatsApp(item.message || buildMessage(item.name, item.link)));
       const acts = document.createElement("span");
       acts.className = "h-actions";
       acts.append(btn, wa);
@@ -410,7 +451,8 @@
       return {
         name,
         series: [{ start: localDateTime(date, h, m), end: localDateTime(date, h, m, CFG.DURATION_MINUTES) }],
-        when: `${date}`,
+        details: sessionDetails({ type: "once", date, h, m }),
+        when: fmtDate(date),
       };
     }
     const startDate = $("startDate").value;
@@ -425,7 +467,12 @@
       slots.push(Object.assign({}, d, readTime(row.querySelector(".time"))));
     }
     if (!slots.length) throw new Error("اختار يوم واحد على الأقل.");
-    return { name, series: buildWeeklySeries(startDate, slots, weeks), when: `أسبوعي · ${slots.map((s) => s.ar).join("، ")}` };
+    return {
+      name,
+      series: buildWeeklySeries(startDate, slots, weeks),
+      details: sessionDetails({ type: "weekly", startDate, weeks, slots }),
+      when: `أسبوعي · ${slots.map((s) => s.ar).join("، ")}`,
+    };
   }
 
   async function onSubmit(e) {
@@ -443,13 +490,14 @@
       const shared = { conferenceId: cd.conferenceId, conferenceSolution: cd.conferenceSolution, entryPoints: cd.entryPoints };
       for (const s of form.series.slice(1)) await insertEvent(token, form.name, s, shared);
       const link = meetLink(first);
-      $("message").textContent = buildMessage(form.name, link);
+      const message = buildMessage(form.name, link, form.details);
+      $("message").textContent = message;
       $("calendarLink").href = first.htmlLink;
       $("resultNote").textContent = form.series.length > 1
         ? `اتعمل ${form.series.length} مواعيد أسبوعية بنفس اللينك.`
         : (form.series[0].recurrence ? "اتعملت سلسلة أسبوعية بلينك ثابت." : "");
       $("resultCard").hidden = false;
-      addHistory({ name: form.name, link, when: form.when });
+      addHistory({ name: form.name, link, when: form.when, message });
       renderHistory();
       $("resultCard").scrollIntoView({ behavior: "smooth" });
     } catch (err) {
