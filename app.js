@@ -74,47 +74,41 @@
     return series;
   }
 
-  const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-  function dayName(dateStr) { return DAYS.find((d) => d.js === weekdayOf(dateStr)).ar; }
-
-  // "2026-11-22" -> "الأحد 22 نوفمبر 2026"
+  // "2026-11-21" -> "Saturday, 21 Nov" (same style Google Calendar shares)
   function fmtDate(dateStr) {
-    const [y, mo, d] = dateStr.split("-").map(Number);
-    return `${dayName(dateStr)} ${d} ${MONTHS_AR[mo - 1]} ${y}`;
+    const [, mo, d] = dateStr.split("-").map(Number);
+    return `${WEEKDAYS[weekdayOf(dateStr)]}, ${d} ${MONTHS[mo - 1]}`;
   }
 
-  // 19, 0 -> "7:00 م" (Arabic AM/PM marks avoid bidi reordering in WhatsApp)
-  function fmtTime(h, m) {
-    const total = ((h * 60 + m) % 1440 + 1440) % 1440;
-    const hh = Math.floor(total / 60), mm = total % 60;
-    return `${hh % 12 || 12}:${pad(mm)} ${hh < 12 ? "ص" : "م"}`;
+  function clock(totalMin) {
+    const t = ((totalMin % 1440) + 1440) % 1440;
+    const hh = Math.floor(t / 60), mm = t % 60;
+    return { text: `${hh % 12 || 12}${mm ? ":" + pad(mm) : ""}`, ap: hh < 12 ? "AM" : "PM" };
   }
 
+  // 18, 0 -> "6–7 PM"; 11, 30 -> "11:30 AM–12:30 PM"
   function fmtRange(h, m) {
-    return `من ${fmtTime(h, m)} لـ ${fmtTime(h, m + CFG.DURATION_MINUTES)}`;
+    const s = clock(h * 60 + m), e = clock(h * 60 + m + CFG.DURATION_MINUTES);
+    return s.ap === e.ap ? `${s.text}–${e.text} ${e.ap}` : `${s.text} ${s.ap}–${e.text} ${e.ap}`;
   }
 
-  // info: {type:"once", date, h, m} or {type:"weekly", startDate, weeks, slots:[{js, ar, h, m}]}
+  // info: {type:"once", date, h, m} or {type:"weekly", startDate, weeks, slots:[{js, h, m}]}
   function sessionDetails(info) {
-    if (info.type === "once") {
-      return [`📅 ${fmtDate(info.date)}`, `⏰ ${fmtRange(info.h, info.m)} (بتوقيت القاهرة)`];
-    }
+    if (info.type === "once") return [`${fmtDate(info.date)} · ${fmtRange(info.h, info.m)}`];
     const start = weekdayOf(info.startDate);
-    const ordered = info.slots.slice().sort((a, b) => ((a.js - start + 7) % 7) - ((b.js - start + 7) % 7));
-    const firstOf = (s) => addDays(info.startDate, (s.js - start + 7) % 7);
-    const firstDate = firstOf(ordered[0]);
-    const lastDate = ordered.map((s) => addDays(firstOf(s), 7 * (info.weeks - 1))).sort().pop();
-    const lines = [`🔁 كل أسبوع لمدة ${info.weeks} ${info.weeks === 1 ? "أسبوع" : info.weeks <= 10 ? "أسابيع" : "أسبوع"}`];
-    for (const s of ordered) lines.push(`📅 ${s.ar} ${fmtRange(s.h, s.m)}`);
-    lines.push(`🗓️ من ${fmtDate(firstDate)} لحد ${fmtDate(lastDate)}`);
-    lines.push("⏰ المواعيد بتوقيت القاهرة");
-    return lines;
+    const offset = (s) => (s.js - start + 7) % 7;
+    const ordered = info.slots.slice().sort((a, b) => offset(a) - offset(b));
+    const weeks = info.weeks === 1 ? "1 week" : `${info.weeks} weeks`;
+    return ordered.map((s) => `${fmtDate(addDays(info.startDate, offset(s)))} · ${fmtRange(s.h, s.m)} (weekly, ${weeks})`);
   }
 
+  // Same layout as the message customer service gets:
+  // name / date · time / Google Meet joining info / Video call link: ...
   function buildMessage(name, link, details) {
-    return [`*${name}*`, ...(details || []), `🔗 ${link}`].join("\n");
+    return [name, ...(details || []), "Google Meet joining info", `Video call link: ${link}`].join("\n");
   }
 
   // Returns digits in international format (Egypt +20 by default), or "" if invalid.
@@ -132,7 +126,7 @@
   }
 
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { to24h, localDateTime, weekdayOf, addDays, buildWeeklySeries, buildMessage, sessionDetails, fmtDate, fmtTime, normalizePhone, waLink, DAYS };
+    module.exports = { to24h, localDateTime, weekdayOf, addDays, buildWeeklySeries, buildMessage, sessionDetails, fmtDate, fmtRange, normalizePhone, waLink, DAYS };
     return;
   }
 
